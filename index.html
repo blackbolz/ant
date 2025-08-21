@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(45deg, #8B4513, #A0522D, #CD853F);
+            background: lightgreen;
             min-height: 100vh;
             overflow: hidden;
             position: relative;
@@ -23,22 +23,14 @@
         /* Ant holes scattered around */
         .ant-hole {
             position: absolute;
-            width: 50px;
-            height: 50px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #2F1B14 30%, #8B4513 70%);
+            border-radius: 50%;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
             cursor: pointer;
             transition: all 0.2s ease;
             z-index: 5;
-        }
-
-        .ant-hole:hover {
-            transform: scale(1.1);
-        }
-
-        .ant-hole:active {
-            transform: scale(0.95);
         }
 
         .ant-hole:nth-child(1) { top: 15%; left: 10%; }
@@ -47,6 +39,14 @@
         .ant-hole:nth-child(4) { bottom: 15%; right: 25%; }
         .ant-hole:nth-child(5) { top: 60%; left: 5%; }
         .ant-hole:nth-child(6) { top: 70%; right: 10%; }
+
+        .ant-hole:hover {
+            transform: scale(1.1);
+        }
+
+        .ant-hole:active {
+            transform: scale(0.95);
+        }
 
         .header {
             text-align: center;
@@ -70,6 +70,41 @@
             color: #4A4A4A;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            pointer-events: auto;
+        }
+
+        .action-button {
+            width: 60px;
+            height: 60px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #2F1B14;
+        }
+
+        .action-button:hover {
+            transform: scale(1.1);
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
         }
 
         .ant {
@@ -124,21 +159,112 @@
 </head>
 <body>
     <!-- Ant holes -->
-    <div class="ant-hole"></div>
-    <div class="ant-hole"></div>
-    <div class="ant-hole"></div>
-    <div class="ant-hole"></div>
-    <div class="ant-hole"></div>
-    <div class="ant-hole"></div>
+    <div class="ant-hole" data-hole-id="1"></div>
+    <div class="ant-hole" data-hole-id="2"></div>
+    <div class="ant-hole" data-hole-id="3"></div>
+    <div class="ant-hole" data-hole-id="4"></div>
+    <div class="ant-hole" data-hole-id="5"></div>
+    <div class="ant-hole" data-hole-id="6"></div>
 
     <div class="header">
         <h1 class="main-title">ANT</h1>
         <p class="subtitle">This will carry a 100x</p>
+        <div class="button-container">
+            <button class="action-button" id="dexscreener-btn" data-url="https://dexscreener.com/">DEX</button>
+            <button class="action-button" id="pumpfun-btn" data-url="https://pump.fun/board">PUMP</button>
+            <button class="action-button" id="twitter-btn" data-url="https://x.com/i/communities/1958571001748267040">X</button>
+            <button class="action-button" id="copy-ca-btn">COPY</button>
+        </div>
     </div>
 
     <div class="click-hint">Click anywhere to spawn an ant!</div>
 
     <script>
+        // Load images on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up button functionality
+            setupButtons();
+            loadButtonImages();
+        });
+
+        function loadButtonImages() {
+            // Load button icons
+            const buttons = [
+                { id: 'dexscreener-btn', image: 'dex-icon.png', fallback: 'DEX' },
+                { id: 'pumpfun-btn', image: 'pump-icon.png', fallback: 'PUMP' },
+                { id: 'twitter-btn', image: 'twitter-icon.png', fallback: 'X' },
+                { id: 'copy-ca-btn', image: 'copy-icon.png', fallback: 'COPY' }
+            ];
+
+            buttons.forEach(buttonData => {
+                const button = document.getElementById(buttonData.id);
+                const img = new Image();
+                
+                img.onload = function() {
+                    button.style.backgroundImage = `url('images/${buttonData.image}')`;
+                    button.textContent = ''; // Hide text when image loads
+                    console.log(`${buttonData.image} loaded successfully`);
+                };
+                
+                img.onerror = function() {
+                    // Keep the text fallback if image doesn't load
+                    button.textContent = buttonData.fallback;
+                    console.log(`${buttonData.image} not found, using text fallback`);
+                };
+                
+                img.src = `images/${buttonData.image}`;
+            });
+        }
+
+        function setupButtons() {
+            // Handle redirect buttons
+            document.getElementById('dexscreener-btn').addEventListener('click', function() {
+                window.open(this.dataset.url, '_blank');
+            });
+
+            document.getElementById('pumpfun-btn').addEventListener('click', function() {
+                window.open(this.dataset.url, '_blank');
+            });
+
+            document.getElementById('twitter-btn').addEventListener('click', function() {
+                window.open(this.dataset.url, '_blank');
+            });
+
+            // Handle copy button
+            document.getElementById('copy-ca-btn').addEventListener('click', function() {
+                const textToCopy = "YOUR_CONTRACT_ADDRESS_HERE"; // Replace this with your actual contract address
+                
+                navigator.clipboard.writeText(textToCopy).then(function() {
+                    // Visual feedback
+                    const button = document.getElementById('copy-ca-btn');
+                    const originalText = button.textContent;
+                    button.textContent = 'COPIED!';
+                    button.style.backgroundColor = 'rgba(0, 255, 0, 0.2)';
+                    
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    }, 1000);
+                }).catch(function() {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = textToCopy;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    // Visual feedback
+                    const button = document.getElementById('copy-ca-btn');
+                    const originalText = button.textContent;
+                    button.textContent = 'COPIED!';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                    }, 1000);
+                });
+            });
+        }
+
         class Ant {
             constructor(x, y) {
                 this.x = x;
