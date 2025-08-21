@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANT - Interactive Multiplier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #8B4513, #A0522D, #CD853F);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        /* Ant holes scattered around */
+        .ant-hole {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+
+        .ant-hole:hover {
+            transform: scale(1.1);
+        }
+
+        .ant-hole:active {
+            transform: scale(0.95);
+        }
+
+        .ant-hole:nth-child(1) { top: 15%; left: 10%; }
+        .ant-hole:nth-child(2) { top: 25%; right: 15%; }
+        .ant-hole:nth-child(3) { bottom: 30%; left: 20%; }
+        .ant-hole:nth-child(4) { bottom: 15%; right: 25%; }
+        .ant-hole:nth-child(5) { top: 60%; left: 5%; }
+        .ant-hole:nth-child(6) { top: 70%; right: 10%; }
+
+        .header {
+            text-align: center;
+            padding: 50px 20px;
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .main-title {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #2F1B14;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+        }
+
+        .subtitle {
+            font-size: 2rem;
+            color: #4A4A4A;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 600;
+        }
+
+        .ant {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            z-index: 5;
+            transition: none;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .multiplier {
+            position: absolute;
+            color: #2F1B14;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8);
+            z-index: 6;
+            pointer-events: none;
+            transition: font-size 0.1s ease-out;
+        }
+
+        .click-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(47, 27, 20, 0.7);
+            font-size: 1.2rem;
+            text-align: center;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 4rem;
+                letter-spacing: 5px;
+            }
+            .subtitle {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ant holes -->
+    <div class="ant-hole"></div>
+    <div class="ant-hole"></div>
+    <div class="ant-hole"></div>
+    <div class="ant-hole"></div>
+    <div class="ant-hole"></div>
+    <div class="ant-hole"></div>
+
+    <div class="header">
+        <h1 class="main-title">ANT</h1>
+        <p class="subtitle">This will carry a 100x</p>
+    </div>
+
+    <div class="click-hint">Click anywhere to spawn an ant!</div>
+
+    <script>
+        class Ant {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.element = document.createElement('div');
+                this.element.className = 'ant';
+                this.element.style.left = x + 'px';
+                this.element.style.top = y + 'px';
+                
+                // Try to load user's ant image, fallback to default if not available
+                this.loadAntImage();
+                
+                this.multiplierElement = document.createElement('div');
+                this.multiplierElement.className = 'multiplier';
+                this.multiplierElement.style.left = x + 'px';
+                this.multiplierElement.style.top = (y - 35) + 'px';
+                
+                document.body.appendChild(this.element);
+                document.body.appendChild(this.multiplierElement);
+                
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 4,
+                    y: (Math.random() - 0.5) * 4
+                };
+                
+                this.multiplier = 0.5;
+                this.maxMultiplier = Math.random() * 99.5 + 0.5; // Random between 0.5 and 100
+                this.isActive = true;
+                this.startTime = Date.now();
+                
+                this.animate();
+            }
+            
+            loadAntImage() {
+                // Set the background image directly
+                this.element.style.backgroundImage = `url('images/ant.png')`;
+                
+                // Test if the image loads successfully
+                const testImg = new Image();
+                testImg.onload = () => {
+                    console.log('Ant image loaded successfully');
+                };
+                testImg.onerror = () => {
+                    console.log('Ant image failed to load, using fallback CSS ant');
+                    // Clear the background image and use CSS fallback
+                    this.element.style.backgroundImage = 'none';
+                    this.element.style.background = '#000';
+                    this.element.style.borderRadius = '50% 50% 50% 50% / 60% 60% 40% 40%';
+                    this.element.innerHTML = `
+                        <div style="position: absolute; width: 8px; height: 8px; background: #000; border-radius: 50%; top: -6px; left: 11px;"></div>
+                        <div style="position: absolute; width: 4px; height: 12px; background: #000; border-radius: 2px; top: -3px; left: 8px; transform: rotate(45deg);"></div>
+                    `;
+                };
+                testImg.src = 'images/ant.png';
+            }
+            
+            animate() {
+                if (!this.isActive) return;
+                
+                // Update position
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                
+                // Bounce off walls
+                const margin = 20;
+                if (this.x <= margin || this.x >= window.innerWidth - margin) {
+                    this.velocity.x *= -1;
+                    this.x = Math.max(margin, Math.min(window.innerWidth - margin, this.x));
+                }
+                if (this.y <= margin || this.y >= window.innerHeight - margin) {
+                    this.velocity.y *= -1;
+                    this.y = Math.max(margin, Math.min(window.innerHeight - margin, this.y));
+                }
+                
+                // Random direction changes
+                if (Math.random() < 0.02) {
+                    this.velocity.x += (Math.random() - 0.5) * 2;
+                    this.velocity.y += (Math.random() - 0.5) * 2;
+                    
+                    // Limit speed
+                    const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+                    if (speed > 6) {
+                        this.velocity.x = (this.velocity.x / speed) * 6;
+                        this.velocity.y = (this.velocity.y / speed) * 6;
+                    }
+                }
+                
+                // Update multiplier with growing size
+                const timeElapsed = Date.now() - this.startTime;
+                const progress = Math.min(timeElapsed / 10000, 1); // 10 seconds max
+                this.multiplier = Math.min(0.5 + (this.maxMultiplier - 0.5) * progress, this.maxMultiplier);
+                
+                // Calculate font size based on multiplier value (grows from 14px to 24px)
+                const minSize = 14;
+                const maxSize = 24;
+                const sizeProgress = (this.multiplier - 0.5) / 99.5; // normalize to 0-1
+                const fontSize = minSize + (maxSize - minSize) * sizeProgress;
+                
+                // Update DOM elements
+                this.element.style.left = this.x + 'px';
+                this.element.style.top = this.y + 'px';
+                this.multiplierElement.style.left = this.x + 'px';
+                this.multiplierElement.style.top = (this.y - 35) + 'px';
+                this.multiplierElement.style.fontSize = fontSize + 'px';
+                this.multiplierElement.textContent = this.multiplier.toFixed(1) + 'x';
+                
+                // Rotate ant based on direction
+                const angle = Math.atan2(this.velocity.y, this.velocity.x) * 180 / Math.PI;
+                this.element.style.transform = `rotate(${angle}deg)`;
+                
+                // Check if reached max multiplier
+                if (this.multiplier >= this.maxMultiplier) {
+                    this.stop();
+                    return;
+                }
+                
+                requestAnimationFrame(() => this.animate());
+            }
+            
+            stop() {
+                this.isActive = false;
+                this.element.style.opacity = '0.7';
+                this.multiplierElement.style.color = '#ff6b6b';
+                this.multiplierElement.style.textShadow = '1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9)';
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    if (this.element.parentNode) {
+                        this.element.parentNode.removeChild(this.element);
+                    }
+                    if (this.multiplierElement.parentNode) {
+                        this.multiplierElement.parentNode.removeChild(this.multiplierElement);
+                    }
+                }, 3000);
+            }
+        }
+        
+        // Click handler for spawning ants anywhere
+        document.addEventListener('click', (e) => {
+            // Check if clicked on an ant hole
+            if (e.target.classList.contains('ant-hole')) {
+                // Spawn 3-8 ants from the hole
+                const numAnts = Math.floor(Math.random() * 6) + 3; // 3-8 ants
+                const holeRect = e.target.getBoundingClientRect();
+                const holeX = holeRect.left + holeRect.width / 2;
+                const holeY = holeRect.top + holeRect.height / 2;
+                
+                // Add visual feedback to the hole
+                e.target.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    e.target.style.transform = 'scale(1)';
+                }, 150);
+                
+                // Spawn ants with slight delays for realistic emergence
+                for (let i = 0; i < numAnts; i++) {
+                    setTimeout(() => {
+                        // Add small random offset so they don't all spawn at exact same spot
+                        const offsetX = (Math.random() - 0.5) * 20;
+                        const offsetY = (Math.random() - 0.5) * 20;
+                        new Ant(holeX + offsetX, holeY + offsetY);
+                    }, i * 100); // 100ms delay between each ant
+                }
+            } else {
+                // Regular single ant spawn
+                const x = e.clientX;
+                const y = e.clientY;
+                new Ant(x, y);
+            }
+        });
+        
+        // Prevent context menu on right click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
