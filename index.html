@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            cursor: url('images/flashlight.png'), auto;
+            font-family: 'Caveat', cursive;
+            min-height: 200vh;
+            position: relative;
+            transition: background-color 0.5s ease;
+        }
+        
+        body.lights-on {
+            background: #f0f0f0;
+            color: #000;
+        }
+        
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            z-index: 300;
+            opacity: 0.8;
+            font-weight: 400;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            transition: color 0.5s ease;
+        }
+        
+        .lights-on .instructions {
+            color: #f0f0f0;
+            text-shadow: none;
+        }
+        .light-switch {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            width: 80px;
+            height: 40px;
+            background: #333;
+            border-radius: 20px;
+            border: 2px solid #666;
+            cursor: pointer;
+            z-index: 300;
+            transition: background-color 0.3s ease;
+        }
+        
+        .light-switch.on {
+            background: #4CAF50;
+            border-color: #45a049;
+        }
+        
+        .switch-toggle {
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .light-switch.on .switch-toggle {
+            transform: translateX(40px);
+        }
+        
+        .content {
+            position: absolute;
+            top: 50vh;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+        }
+        
+        .second-page {
+            position: absolute;
+            top: 150vh;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+        }
+        
+        .title, .subtitle, .second-title, .second-subtitle, .button-container {
+            position: relative;
+            -webkit-mask: radial-gradient(circle 400px at var(--mouse-x, -400px) var(--mouse-y, -400px), white 0%, white 40%, transparent 70%);
+            mask: radial-gradient(circle 400px at var(--mouse-x, -400px) var(--mouse-y, -400px), white 0%, white 40%, transparent 70%);
+            transition: -webkit-mask-position 0.1s ease;
+            transition: mask-position 0.1s ease;
+        }
+        
+        .lights-on .title,
+        .lights-on .subtitle,
+        .lights-on .second-title,
+        .lights-on .second-subtitle,
+        .lights-on .button-container {
+            -webkit-mask: none;
+            mask: none;
+        }
+        
+        .title, .second-title {
+            font-size: 8rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            transform: rotate(-2deg);
+            letter-spacing: 0.05em;
+            line-height: 0.9;
+        }
+        
+        .subtitle, .second-subtitle {
+            font-size: 2.2rem;
+            font-weight: 400;
+            transform: rotate(1deg);
+            margin-top: 1rem;
+            margin-bottom: 3rem;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .nav-button {
+            width: 80px;
+            height: 80px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0.8;
+        }
+        
+        .nav-button:hover {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+        
+        .nav-button img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: filter 0.3s ease;
+        }
+        
+        /* Make specific images black when lights are on */
+        .lights-on .nav-button img[src*="x.png"],
+        .lights-on .nav-button img[src*="dex.png"],
+        .lights-on .nav-button img[src*="copy.png"] {
+            filter: brightness(0);
+        }
+        
+        .flashlight {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            background: radial-gradient(circle, 
+                rgba(255,255,255,0.4) 0%, 
+                rgba(255,255,255,0.3) 20%, 
+                rgba(255,255,255,0.2) 40%, 
+                rgba(255,255,255,0.1) 60%, 
+                transparent 100%);
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            z-index: 5;
+        }
+        
+        .lights-on .flashlight {
+            display: none;
+        }
+        
+        .shadow-img {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            z-index: 1;
+            transition: none;
+            opacity: 0.3;
+            filter: brightness(0.4);
+        }
+        
+        .shadow-img.lit {
+            opacity: 1;
+            filter: brightness(1);
+        }
+        
+        .shadow-img.excited {
+            transform: scale(1.5);
+            animation: shadowFlash 0.1s infinite alternate;
+        }
+        
+        @keyframes shadowFlash {
+            0% { filter: brightness(0) invert(1); }
+            100% { filter: brightness(1) invert(0); }
+        }
+        
+        .lights-on .shadow-img {
+            opacity: 1;
+            filter: brightness(1);
+        }
+        
+        .flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        @keyframes flash {
+            0% { opacity: 0; }
+            20% { opacity: 0.9; }
+            40% { opacity: 0; }
+            60% { opacity: 0.7; }
+            80% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+        
+        .flashing {
+            animation: flash 3s ease-in-out;
+        }
+        
+        /* Copy notification */
+        .copy-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: 400;
+            z-index: 400;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .copy-notification.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .title, .second-title {
+                font-size: 4rem;
+            }
+            .subtitle, .second-subtitle {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        Click to open the flashlight • Hunt the moving shadow • Hit the center to unleash the light
+    </div>
+    
+    <div class="light-switch" id="lightSwitch">
+        <div class="switch-toggle"></div>
+    </div>
+    
+    <div class="content">
+        <h1 class="title">Shadow</h1>
+        <p class="subtitle">behind every shadow there is light</p>
+        
+        <div class="button-container">
+            <button class="nav-button" onclick="window.location.href='https://example.com/page1'">
+                <img src="images/x.png" alt="Button 1">
+            </button>
+            <button class="nav-button" onclick="window.location.href='https://example.com/page2'">
+                <img src="images/dex.png" alt="Button 2">
+            </button>
+            <button class="nav-button" onclick="window.location.href='https://example.com/page3'">
+                <img src="images/pump.png" alt="Button 3">
+            </button>
+            <button class="nav-button" id="copyButton">
+                <img src="images/copy.png" alt="Copy Button">
+            </button>
+        </div>
+    </div>
+    
+    <div class="second-page">
+        <!-- Empty space for now -->
+    </div>
+    
+    <div class="flashlight" id="flashlight"></div>
+    <div id="shadowContainer"></div>
+    <div class="flash-overlay" id="flashOverlay"></div>
+    <div class="copy-notification" id="copyNotification">Copied "coming soon" to clipboard!</div>
+    
+    <script>
+        let flashlightOn = false;
+        let lightsOn = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        let baseSpeed = 2;
+        let isFlashing = false;
+        
+        // Shadow array to hold multiple shadows
+        let shadows = [];
+        const NUM_SHADOWS = 12; // Number of shadows to create
+        
+        const flashlight = document.getElementById('flashlight');
+        const shadowContainer = document.getElementById('shadowContainer');
+        const flashOverlay = document.getElementById('flashOverlay');
+        const lightSwitch = document.getElementById('lightSwitch');
+        const body = document.body;
+        const copyButton = document.getElementById('copyButton');
+        const copyNotification = document.getElementById('copyNotification');
+        
+        // Create multiple shadows
+        function createShadows() {
+            for (let i = 0; i < NUM_SHADOWS; i++) {
+                const shadow = {
+                    element: document.createElement('img'),
+                    x: Math.random() * (window.innerWidth - 80),
+                    y: Math.random() * (window.innerHeight - 80),
+                    velX: (Math.random() - 0.5) * 2,
+                    velY: (Math.random() - 0.5) * 2,
+                    isExcited: false,
+                    excitedTimeout: null
+                };
+                
+                shadow.element.src = 'images/shadow.png';
+                shadow.element.className = 'shadow-img';
+                shadow.element.alt = 'Shadow';
+                shadow.element.style.left = shadow.x + 'px';
+                shadow.element.style.top = shadow.y + 'px';
+                
+                shadowContainer.appendChild(shadow.element);
+                shadows.push(shadow);
+            }
+        }
+        
+        // Initialize shadows
+        createShadows();
+        
+        // Copy button functionality
+        copyButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            try {
+                await navigator.clipboard.writeText('coming soon');
+                showCopyNotification();
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = 'coming soon';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopyNotification();
+            }
+        });
+        
+        function showCopyNotification() {
+            copyNotification.classList.add('show');
+            setTimeout(() => {
+                copyNotification.classList.remove('show');
+            }, 2000);
+        }
+        
+        // Light switch functionality
+        lightSwitch.addEventListener('click', () => {
+            lightsOn = !lightsOn;
+            
+            if (lightsOn) {
+                lightSwitch.classList.add('on');
+                body.classList.add('lights-on');
+                flashlightOn = false;
+                flashlight.style.opacity = '0';
+                baseSpeed = 6; // Faster when lights are on
+            } else {
+                lightSwitch.classList.remove('on');
+                body.classList.remove('lights-on');
+                baseSpeed = 2; // Normal speed when lights are off
+            }
+        });
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            if (flashlightOn && !lightsOn) {
+                flashlight.style.left = mouseX + 'px';
+                flashlight.style.top = mouseY + 'px';
+                
+                // Update mask position for text and shadow
+                updateMaskPosition(mouseX, mouseY);
+                
+                // Check if flashlight hovers over shadow
+                checkFlashlightHover(mouseX, mouseY);
+            }
+        });
+        
+        // Update mask position for spotlight effect
+        function updateMaskPosition(x, y) {
+            const content = document.querySelector('.content');
+            const contentRect = content.getBoundingClientRect();
+            const relativeX = x - contentRect.left;
+            const relativeY = y - contentRect.top;
+            
+            const secondPage = document.querySelector('.second-page');
+            const secondRect = secondPage.getBoundingClientRect();
+            const relativeX2 = x - secondRect.left;
+            const relativeY2 = y - secondRect.top;
+            
+            // Update CSS custom properties for text masking
+            content.style.setProperty('--mouse-x', relativeX + 'px');
+            content.style.setProperty('--mouse-y', relativeY + 'px');
+            secondPage.style.setProperty('--mouse-x', relativeX2 + 'px');
+            secondPage.style.setProperty('--mouse-y', relativeY2 + 'px');
+        }
+        
+        // Click to toggle flashlight
+        document.addEventListener('click', (e) => {
+            if (isFlashing || e.target.closest('.light-switch') || e.target.closest('#copyButton') || lightsOn) return;
+            
+            flashlightOn = !flashlightOn;
+            
+            if (flashlightOn) {
+                flashlight.style.width = '500px';
+                flashlight.style.height = '500px';
+                flashlight.style.left = mouseX + 'px';
+                flashlight.style.top = mouseY + 'px';
+                flashlight.style.opacity = '1';
+                
+                // Light up all shadows
+                shadows.forEach(shadow => {
+                    shadow.element.classList.add('lit');
+                });
+                
+                // Update mask positions
+                updateMaskPosition(mouseX, mouseY);
+                
+                // Check if flashlight hits any shadow immediately
+                checkFlashlightHover(mouseX, mouseY);
+            } else {
+                flashlight.style.opacity = '0';
+                
+                // Remove lit class from all shadows
+                shadows.forEach(shadow => {
+                    shadow.element.classList.remove('lit');
+                });
+                
+                // Hide everything by moving mask off-screen
+                const content = document.querySelector('.content');
+                const secondPage = document.querySelector('.second-page');
+                content.style.setProperty('--mouse-x', '-400px');
+                content.style.setProperty('--mouse-y', '-400px');
+                secondPage.style.setProperty('--mouse-x', '-400px');
+                secondPage.style.setProperty('--mouse-y', '-400px');
+            }
+        });
+        
+        // Animate shadow movement
+        function animateShadow() {
+            if (isFlashing) {
+                requestAnimationFrame(animateShadow);
+                return;
+            }
+            
+            shadows.forEach(shadow => {
+                // Use baseSpeed which changes based on lights on/off
+                let speed = shadow.isExcited ? 10 : (baseSpeed / 2);
+                shadow.x += shadow.velX * speed;
+                shadow.y += shadow.velY * speed;
+                
+                // Bounce off viewport edges
+                if (shadow.x <= 0 || shadow.x >= window.innerWidth - 80) {
+                    shadow.velX *= -1;
+                    shadow.x = Math.max(0, Math.min(window.innerWidth - 80, shadow.x));
+                }
+                if (shadow.y <= 0 || shadow.y >= window.innerHeight - 80) {
+                    shadow.velY *= -1;
+                    shadow.y = Math.max(0, Math.min(window.innerHeight - 80, shadow.y));
+                }
+                
+                shadow.element.style.left = shadow.x + 'px';
+                shadow.element.style.top = shadow.y + 'px';
+            });
+            
+            // Continuously check for flashlight hover if flashlight is on
+            if (flashlightOn && !lightsOn) {
+                checkFlashlightHover(mouseX, mouseY);
+            }
+            
+            requestAnimationFrame(animateShadow);
+        }
+        
+        // Check if flashlight hovers over any shadow
+        function checkFlashlightHover(flashX, flashY) {
+            shadows.forEach(shadow => {
+                const distance = Math.sqrt(
+                    Math.pow(flashX - (shadow.x + 40), 2) + 
+                    Math.pow(flashY - (shadow.y + 40), 2)
+                );
+                
+                // Make shadow brighter when flashlight is near
+                if (distance < 250 && flashlightOn && !lightsOn) {
+                    shadow.element.classList.add('lit');
+                    
+                    // Only trigger flash when pointing directly at center (smaller radius)
+                    if (distance < 50 && !isFlashing && !shadow.isExcited) {
+                        triggerShadowExcited(shadow);
+                    }
+                } else if (!lightsOn) {
+                    shadow.element.classList.remove('lit');
+                }
+            });
+        }
+        
+        // Trigger shadow excited state
+        function triggerShadowExcited(shadow) {
+            shadow.isExcited = true;
+            shadow.element.classList.add('excited');
+            
+            // Make shadow move faster
+            shadow.velX = (Math.random() - 0.5) * 8;
+            shadow.velY = (Math.random() - 0.5) * 8;
+            
+            // Clear any existing timeout
+            if (shadow.excitedTimeout) {
+                clearTimeout(shadow.excitedTimeout);
+            }
+            
+            shadow.excitedTimeout = setTimeout(() => {
+                shadow.isExcited = false;
+                shadow.element.classList.remove('excited');
+                shadow.velX = (Math.random() - 0.5) * 2;
+                shadow.velY = (Math.random() - 0.5) * 2;
+                shadow.excitedTimeout = null;
+            }, 3000);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            shadows.forEach(shadow => {
+                shadow.x = Math.min(shadow.x, window.innerWidth - 80);
+                shadow.y = Math.min(shadow.y, window.innerHeight - 80);
+            });
+        });
+        
+        // Start shadow animation
+        animateShadow();
+        
+        // Add some randomness to shadow movement
+        setInterval(() => {
+            if (!isFlashing) {
+                shadows.forEach(shadow => {
+                    shadow.velX += (Math.random() - 0.5) * 0.5;
+                    shadow.velY += (Math.random() - 0.5) * 0.5;
+                    
+                    // Keep velocity in reasonable bounds based on current speed
+                    const maxVel = baseSpeed * 1.5;
+                    shadow.velX = Math.max(-maxVel, Math.min(maxVel, shadow.velX));
+                    shadow.velY = Math.max(-maxVel, Math.min(maxVel, shadow.velY));
+                });
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
